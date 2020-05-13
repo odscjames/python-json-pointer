@@ -60,7 +60,7 @@ import copy
 _nothing = object()
 
 
-def set_pointer(doc, pointer, value, inplace=True):
+def set_pointer(doc, pointer, value, inplace=True, createStructures=False):
     """Resolves pointer against doc and sets the value of the target within doc.
 
     With inplace set to true, doc is modified as long as pointer is not the
@@ -83,7 +83,7 @@ def set_pointer(doc, pointer, value, inplace=True):
     """
 
     pointer = JsonPointer(pointer)
-    return pointer.set(doc, value, inplace)
+    return pointer.set(doc, value, inplace, createStructures)
 
 
 def resolve_pointer(doc, pointer, default=_nothing):
@@ -184,14 +184,14 @@ class JsonPointer(object):
         parts = [unescape(part) for part in parts]
         self.parts = parts
 
-    def to_last(self, doc):
+    def to_last(self, doc, createStructures=False):
         """Resolves ptr until the last step, returns (sub-doc, last-step)"""
 
         if not self.parts:
             return doc, None
 
         for part in self.parts[:-1]:
-            doc = self.walk(doc, part)
+            doc = self.walk(doc, part, createStructures)
 
         return doc, self.get_part(doc, self.parts[-1])
 
@@ -212,7 +212,7 @@ class JsonPointer(object):
 
     get = resolve
 
-    def set(self, doc, value, inplace=True):
+    def set(self, doc, value, inplace=True, createStructures=False):
         """Resolve the pointer against the doc and replace the target with value."""
 
         if len(self.parts) == 0:
@@ -223,7 +223,7 @@ class JsonPointer(object):
         if not inplace:
             doc = copy.deepcopy(doc)
 
-        (parent, part) = self.to_last(doc)
+        (parent, part) = self.to_last(doc, createStructures)
 
         parent[part] = value
         return doc
@@ -254,7 +254,7 @@ class JsonPointer(object):
                                        "must be mapping/sequence or support __getitem__" % type(doc))
 
 
-    def walk(self, doc, part):
+    def walk(self, doc, part, createStructures=False):
         """ Walks one step in doc and returns the referenced part """
 
         part = self.get_part(doc, part)
@@ -269,6 +269,9 @@ class JsonPointer(object):
                 return doc[part]
 
             except IndexError:
+                if createStructures:
+                    pass
+                    # TODO need to work out what to do here
                 raise JsonPointerException("index '%s' is out of bounds" % (part, ))
 
         # Else the object is a mapping or supports __getitem__(so assume custom indexing)
@@ -276,6 +279,9 @@ class JsonPointer(object):
             return doc[part]
 
         except KeyError:
+            if createStructures:
+                doc[part] = {}
+                return doc[part]
             raise JsonPointerException("member '%s' not found in %s" % (part, doc))
 
 

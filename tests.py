@@ -199,6 +199,17 @@ class SetTests(unittest.TestCase):
 
         self.assertRaises(JsonPointerException, set_pointer, doc, "", 9)
 
+    def test_set_create_structures_1(self):
+        doc = {}
+        set_pointer(doc, "/cat/name", "fluffy", createStructures=True)
+        self.assertEqual(resolve_pointer(doc, "/cat/name"), "fluffy")
+
+    def test_set_create_structures_3(self):
+        doc = {}
+        set_pointer(doc, "/cat/legs/number", 3, createStructures=True)
+        self.assertEqual(resolve_pointer(doc, "/cat/legs/number"), 3)
+
+
 
 class AltTypesTests(unittest.TestCase):
 
