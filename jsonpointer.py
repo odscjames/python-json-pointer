@@ -184,14 +184,14 @@ class JsonPointer(object):
         parts = [unescape(part) for part in parts]
         self.parts = parts
 
-    def to_last(self, doc, createStructures=False):
+    def to_last(self, doc):
         """Resolves ptr until the last step, returns (sub-doc, last-step)"""
 
         if not self.parts:
             return doc, None
 
         for part in self.parts[:-1]:
-            doc = self.walk(doc, part, createStructures)
+            doc = self.walk(doc, part)
 
         return doc, self.get_part(doc, self.parts[-1])
 
@@ -223,10 +223,36 @@ class JsonPointer(object):
         if not inplace:
             doc = copy.deepcopy(doc)
 
-        (parent, part) = self.to_last(doc, createStructures)
+        if createStructures:
+            self.create_structures(doc)
+
+        (parent, part) = self.to_last(doc)
 
         parent[part] = value
         return doc
+
+    def create_structures(self, doc):
+
+        for idx in range(0, len(self.parts)-1):
+
+            part = self.get_part(doc, self.parts[idx])
+            next_part = self.parts[idx + 1]
+            next_structure = [] if next_part == '-' or self._RE_ARRAY_INDEX.match(str(next_part)) else {}
+            if isinstance(doc, Sequence):
+                if isinstance(part, int):
+                    while len(doc) <= part:
+                        doc.append(next_structure)
+                elif part == '-':
+                    pass
+                    # TODO
+
+            else:
+                if part not in doc:
+                    doc[part] = next_structure
+
+            doc = self.walk(doc, part)
+
+
 
     def get_part(self, doc, part):
         """Returns the next step in the correct type"""
@@ -254,7 +280,7 @@ class JsonPointer(object):
                                        "must be mapping/sequence or support __getitem__" % type(doc))
 
 
-    def walk(self, doc, part, createStructures=False):
+    def walk(self, doc, part):
         """ Walks one step in doc and returns the referenced part """
 
         part = self.get_part(doc, part)
@@ -269,9 +295,6 @@ class JsonPointer(object):
                 return doc[part]
 
             except IndexError:
-                if createStructures:
-                    pass
-                    # TODO need to work out what to do here
                 raise JsonPointerException("index '%s' is out of bounds" % (part, ))
 
         # Else the object is a mapping or supports __getitem__(so assume custom indexing)
@@ -279,9 +302,6 @@ class JsonPointer(object):
             return doc[part]
 
         except KeyError:
-            if createStructures:
-                doc[part] = {}
-                return doc[part]
             raise JsonPointerException("member '%s' not found in %s" % (part, doc))
 
 

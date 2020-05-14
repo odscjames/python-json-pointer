@@ -209,6 +209,12 @@ class SetTests(unittest.TestCase):
         set_pointer(doc, "/cat/legs/number", 3, createStructures=True)
         assert {'cat': {'legs': {'number': 3}}} == doc
 
+    def test_set_create_structures_3(self):
+        doc = {}
+        set_pointer(doc, "/cats/0/legs/number", 3, createStructures=True)
+        set_pointer(doc, "/cats/0/name", "bill", createStructures=True)
+        assert {'cats': [{'legs': {'number': 3}, 'name': 'bill'}]} == doc
+
 
 
 class AltTypesTests(unittest.TestCase):
