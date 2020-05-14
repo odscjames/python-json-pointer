@@ -202,12 +202,12 @@ class SetTests(unittest.TestCase):
     def test_set_create_structures_1(self):
         doc = {}
         set_pointer(doc, "/cat/name", "fluffy", createStructures=True)
-        self.assertEqual(resolve_pointer(doc, "/cat/name"), "fluffy")
+        assert {'cat': {'name': 'fluffy'}} == doc
 
-    def test_set_create_structures_3(self):
+    def test_set_create_structures_2(self):
         doc = {}
         set_pointer(doc, "/cat/legs/number", 3, createStructures=True)
-        self.assertEqual(resolve_pointer(doc, "/cat/legs/number"), 3)
+        assert {'cat': {'legs': {'number': 3}}} == doc
 
 
 
